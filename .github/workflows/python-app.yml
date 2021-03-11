@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
@@ -26,6 +26,5 @@ jobs:
       run: poetry install
     - name: Test with doctest
       run: |
-        poetry shell
-        python -m doctest sane_out/*.py
+        poetry run python -m doctest sane_out/*.py
 
