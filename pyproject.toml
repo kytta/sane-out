@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sane-out"
-version = "0.0.1"
+version = "0.1.0"
 description = "A lightweight library for clean console output"
 license = "MIT"
 authors = ["Nikita Karamov <nick@karamoff.dev>"]
