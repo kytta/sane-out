@@ -5,9 +5,9 @@ SanePrinter is the main class; it is responsible for the output of the library
 """
 
 import sys
-from typing import List, Optional, TextIO
+from typing import Optional, Iterable
 
-from sane_out.colour import FgAnsiColour
+from sane_out.colour import encode_ansi
 
 
 class _SanePrinter:
@@ -19,9 +19,7 @@ class _SanePrinter:
     module-provided version.
     """
 
-    def __init__(
-        self, verbose: bool = False, colour: bool = True
-    ) -> None:
+    def __init__(self, verbose: bool = False, colour: bool = True) -> None:
         """
         Creates an instance of SanePrinter.
 
@@ -34,11 +32,10 @@ class _SanePrinter:
     def _print(
         self,
         message: str = "",
-        colours: Optional[List[FgAnsiColour]] = None,
-        stream: TextIO = None,
+        colour_code: Optional[Iterable[int]] = None,
+        err: bool = False,
     ):
-        """
-        Prints a message to a specified stream.
+        """Prints a message to a specified stream / file.
 
         The method can become the sequence of ANSI codes to colour the message with.
         Since colour.py offers only foreground colors and the bright modofier, most uses
@@ -47,12 +44,12 @@ class _SanePrinter:
         >>> _SanePrinter()._print("Hello World")
         Hello World
 
-        >>> _SanePrinter()._print("Hello Cyan World", [FgAnsiColour.CYAN])
-        \x1b[36mHello Cyan World\x1b[39m
+        >>> _SanePrinter()._print("Hello Cyan World", [36])
+        \x1b[36mHello Cyan World\x1b[0m
 
         The message is printed to stdout by default; one can specify a different stream:
 
-        >>> _SanePrinter()._print("Hello stderr", stream=sys.stderr)
+        >>> _SanePrinter()._print("Hello stderr", err=True)
 
         (doctest doesn't support stderr testing...)
 
@@ -61,13 +58,21 @@ class _SanePrinter:
                         message without colours
         :param stream: stream to output the message to
         """
-        coloured = self.colour and colours is not None
-        if coloured:
-            colour_str = ''.join([c.value for c in colours])
-            print(f"{colour_str}", file=stream, end="")
+        if err:
+            stream = sys.stderr
+        else:
+            stream = sys.stdout
 
-        print(f"{message}{FgAnsiColour.RESET.value if coloured else ''}",
-              file=stream)
+        coloured = self.colour and colour_code is not None
+
+        if message and coloured:
+            message = f"{encode_ansi(*colour_code)}{message}{encode_ansi(0)}"
+
+        message += "\n"
+
+        if message:
+            stream.write(message)
+        stream.flush()
 
     def debug(self, message: str = ""):
         """
@@ -79,13 +84,13 @@ class _SanePrinter:
         >>> _SanePrinter().debug("Debug Message")
 
         >>> _SanePrinter(verbose=True).debug("Debug Message")
-        \x1b[1m\x1b[30mDebug Message\x1b[39m
+        \x1b[30;1mDebug Message\x1b[0m
 
         :param message: message to print
         """
 
         if self.verbose:
-            self._print(message, [FgAnsiColour.BRIGHT, FgAnsiColour.BLACK], sys.stdout)
+            self._print(message, [30, 1])
 
     def __call__(self, message: str = ""):
         """
@@ -101,7 +106,7 @@ class _SanePrinter:
 
         :param message: message to print
         """
-        self._print(message, None, sys.stdout)
+        self.info(message)
 
     def info(self, message: str = ""):
         """
@@ -114,7 +119,7 @@ class _SanePrinter:
 
         :param message: message to print
         """
-        self.__call__(message)
+        self._print(message)
 
     def warning(self, message: str = ""):
         """
@@ -124,7 +129,7 @@ class _SanePrinter:
 
         :param message: message to print
         """
-        self._print(message, [FgAnsiColour.YELLOW], sys.stderr)
+        self._print(message, [33], err=True)
 
     def error(self, message: str = "", exit_code: int = -1):
         """
@@ -136,8 +141,6 @@ class _SanePrinter:
         :param exit_code: code to exit the program with
         """
         self.calm_error(message)
-        sys.stderr.flush()
-        sys.stdout.flush()
         sys.exit(exit_code)
 
     def calm_error(self, message: str = ""):
@@ -148,4 +151,4 @@ class _SanePrinter:
 
         :param message: message to print
         """
-        self._print(message, [FgAnsiColour.RED], sys.stderr)
+        self._print(message, [31], err=True)
