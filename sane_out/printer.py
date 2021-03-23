@@ -5,7 +5,7 @@ SanePrinter is the main class; it is responsible for the output of the library
 """
 
 import sys
-from typing import Optional, Iterable
+from typing import Optional, Iterable, NoReturn
 
 from sane_out.colour import encode_ansi
 
@@ -131,7 +131,7 @@ class _SanePrinter:
         """
         self._print(message, [33], err=True)
 
-    def error(self, message: str = "", exit_code: int = -1):
+    def error(self, message: str = "", exit_code: int = -1) -> NoReturn:
         """
         Prints an error message and quits the program.
 
